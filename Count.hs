@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RebindableSyntax #-}
@@ -34,15 +33,16 @@ instance GMonad Counter where
     {-| Compose effects by addition -}
     type Plus Counter n m = n :+ m
 
-    return :: a -> Counter Z a
+    -- return :: a -> Counter Z a
     return = Counter
 
-    (>>=) :: Counter n a -> (a -> Counter m b) -> Counter (n :+ m) b
+    -- (>>=) :: Counter n a -> (a -> Counter m b) -> Counter (n :+ m) b
     (Counter a) >>= k = Counter . forget $ k a
 
 {-| A 'tick' provides a way to increment the counter -}
 tick :: Counter (S Z) ()
 tick = Counter ()
+
 
 
 
