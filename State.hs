@@ -2,7 +2,7 @@ module State where
 
 -- Bye Monads... as we know them
 import Prelude hiding (Monad(..))
-import PMonad
+import ParameterisedMonad
 
 newtype State s1 s2 a = State { runState :: s1 -> (a, s2) }
 

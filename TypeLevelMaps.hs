@@ -1,4 +1,3 @@
-{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
@@ -6,15 +5,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE IncoherentInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
 
+module TypeLevelMaps where
 
-
-module TypeLevelSets where
+import GHC.TypeLits
 
 data Var (v :: Symbol) = Var
 
@@ -30,6 +28,7 @@ data Map (n :: [Mapping Symbol *]) where
     Empty :: Map '[]
     Ext :: Var v -> t -> Map m -> Map ((v ':-> t) ': m)
 
+-- Showing map nicely
 instance Show (Map '[]) where
     show Empty = "{}"
 
@@ -43,6 +42,8 @@ instance Show' (Map '[]) where
 instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k ':-> v) ': s)) where
     show' (Ext k v s) = ", " ++ show k ++ " :-> " ++ show v ++ show' s
 
+
+-- Looking up from a map, and membership
 class Member v t m where
   lookp :: Var v -> Map m -> t
 
@@ -52,6 +53,8 @@ instance {-# OVERLAPS #-} Member v t ((v ':-> t) ': m) where
 instance Member v t m => Member v t (x ': m) where
   lookp v (Ext _ _ m) = lookp v m
 
+
+-- Updating a map
 class Updatable v t m n where
   update :: Map m -> Var v -> t -> Map n
 
@@ -63,7 +66,3 @@ instance Updatable v t m n => Updatable v t ((w ':-> y) ': m) ((w ':-> y) ': n) 
 
 instance Updatable v t '[] '[v ':-> t] where
   update Empty v x = Ext v x Empty
-
-type Get v t m = Member v t m
-type Put v t m n = Updatable v t m n
-type Update v t m = (Get v t m, Put v t m m)

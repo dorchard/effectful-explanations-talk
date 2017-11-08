@@ -32,21 +32,35 @@ exMap = Ext (Var @ "x") (42 :: Int)
 
 -- Fine-grained get, put, and modify
 
-newtype State s1 s2 a = State { runState :: s1 -> (a, s2) }
+data State s1 s2 a where
+      Full :: (Map s1 -> (a, Map s2)) -> State s1 s2 a
+      Get  :: (Map s1 -> a) -> State s1 s2 a
+      Pure :: a -> State s s a
 
 instance PMonad State where
-  return x = State (\s -> (x, s))
-  (State m) >>= k =
-      State $ \s0 -> let (a, s1) = m s0
-                         State m' = k a in m' s1
+  return x = Pure x
+  (Pure x) >>= k = k x
+  (Get  m) >>= k =
+     Full $ \s0 ->
+       let a = m s0
+       in case k a of
+            Full m' -> m' s0
+            Get  m' -> (m' s0, s0)
+            Pure x  -> (x, s0)
+  (Full m) >>= k =
+      Full $ \s0 -> let (a, s1) = m s0
+                     in case k a of
+                          Full m' -> m' s1
+                          Get  m' -> (m' s1, s1)
+                          Pure x  -> (x, s1)
 
-get :: Member v t m => Var v -> State (Map m) (Map n) t
+get :: Member v t m => Var v -> State m n t
 get v = State $ \s -> (lookp v s, s)
 
-put :: Updatable v t m n => Var v -> t -> State (Map m) (Map n) ()
+put :: Updatable v t m n => Var v -> t -> State m n ()
 put v t = State $ \s -> ((), update s v t)
 
-modify :: (Member v s m, Updatable v t m n) => Var v -> (s -> t) -> State (Map m) (Map n) ()
+modify :: (Member v s m, Updatable v t m n) => Var v -> (s -> t) -> State m n ()
 modify v f = do
   x <- get v
   put v (f x)
@@ -61,7 +75,7 @@ type Update v t m = (Get v t m, Put v t m m)
 
 -- Examples
 
-increment :: (Update "x" Int m) => State (Map m) (Map m) ()
+increment :: (Update "x" Int m) => State m m ()
 increment = do
    (n :: Int) <- get (Var @ "x")
    put (Var @ "x") (n+1)
@@ -76,7 +90,7 @@ example = do
 go :: (Bool, Map '["x" ':-> Int])
 go = runState example exMap
 
-example2 :: (Get "flag" Bool m, Update "x" Int m, Put "y" Int m m) => State (Map m) (Map m) ()
+example2 :: (Get "flag" Bool m, Update "x" Int m, Put "y" Int m m) => State m m ()
 example2 = do
    flag <- get (Var @ "flag")
    if flag

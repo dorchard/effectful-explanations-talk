@@ -34,17 +34,17 @@ type AtomicState s t a = State (Closed s) (Closed t) a
 -----------------------------
 -- Examples
 
-myProgram :: AtomicState Int Int String
+{-
+
+myProgram :: State Int String
 myProgram = do
   x <- get
-  -- The following previous code causes a type error
-  -- a <- somethingPure x
+  let a = somethingPure x
   put (x+1)
-  a <- somethingPure x
   return (a ++ show x)
 
-somethingPure :: Int -> AtomicState Int Int String
-somethingPure x = do
-  n <- get
-  put (n + 1)
-  return $ "hello" ++ show x
+somethingPure :: Int -> String
+somethingPure n =
+  if n == 0 then "hello" else "goodbye"
+
+-}
