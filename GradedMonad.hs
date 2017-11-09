@@ -19,6 +19,7 @@ class GMonad (g :: eff -> * -> *) where
   return :: a -> g (Unit g) a
   (>>=) :: g x a -> (a -> g y b) -> g (Plus g x y) b
 
+
 -- Some boilerplate
 (>>) :: GMonad g => g x a -> g y b -> g (Plus g x y) b
 x >> y = x >>= const y

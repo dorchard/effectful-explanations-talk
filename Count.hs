@@ -18,7 +18,6 @@ import GradedMonad
 data Z
 data S n
 
-
 {-| The counter has no semantic meaning -}
 newtype Counter n a = Counter { forget :: a }
 
@@ -44,9 +43,7 @@ instance GMonad Counter where
 tick :: Counter (S Z) ()
 tick = Counter ()
 
-
-
--- Get's very cool when combined with sized types
+-- Gets very cool when combined with sized types
 data Vector n a where
     Nil :: Vector Z a
     Cons :: a -> Vector n a -> Vector (S n) a

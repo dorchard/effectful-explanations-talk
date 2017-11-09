@@ -21,8 +21,6 @@ class PMonad (p :: k -> k -> * -> *) where
   (>>=) :: p pre interm t -> (t -> p interm post t') -> p pre post t'
 
 
-
-
 -- Other boilerplate
 (>>) :: PMonad p => p pre mid t -> p mid post t' -> p pre post t'
 x >> y = x >>= const y

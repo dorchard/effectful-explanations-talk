@@ -30,8 +30,6 @@ exMap = Ext (Var @ "x") (42 :: Int)
         Empty
 
 -- Fine-grained get, put, and modify
-
-
 get :: Member v t m => Var v -> State (Map m) (Map m) t
 get v = State $ \s -> (lookp v s, s)
 
@@ -42,8 +40,6 @@ modify :: (Member v s m, Updatable v t m n) => Var v -> (s -> t) -> State (Map m
 modify v f = do
   x <- get v
   put v (f x)
-
-
 
 
 -- Aliases for our operations
