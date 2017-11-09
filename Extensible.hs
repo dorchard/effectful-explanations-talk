@@ -19,7 +19,8 @@ import Prelude hiding (Monad(..))
 import ParameterisedMonad
 -- State parameterised monad
 import State
--- A subset of the 'type-level-sets' package
+-- A local subset of the 'type-level-sets' package
+-- import Data.Type.Map
 import TypeLevelMaps
 
 
@@ -30,20 +31,20 @@ exMap = Ext (Var @ "x") (42 :: Int)
         Empty
 
 -- Fine-grained get, put, and modify
-get :: Member v t m => Var v -> State (Map m) (Map m) t
+get :: IsMember v t m => Var v -> State (Map m) (Map m) t
 get v = State $ \s -> (lookp v s, s)
 
 put :: Updatable v t m n => Var v -> t -> State (Map m) (Map n) ()
 put v t = State $ \s -> ((), update s v t)
 
-modify :: (Member v s m, Updatable v t m n) => Var v -> (s -> t) -> State (Map m) (Map n) ()
+modify :: (IsMember v s m, Updatable v t m n) => Var v -> (s -> t) -> State (Map m) (Map n) ()
 modify v f = do
   x <- get v
   put v (f x)
 
 
 -- Aliases for our operations
-type Get v t m = Member v t m
+type Get v t m = IsMember v t m
 type Put v t m n = Updatable v t m n
 type Update v t m = (Get v t m, Put v t m m)
 

@@ -10,6 +10,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
 
+-- Taken from the `type-level-sets` package
+-- Data.Type.Map
+-- https://github.com/dorchard/type-level-sets
+-- https://hackage.haskell.org/package/type-level-sets
 module TypeLevelMaps where
 
 import GHC.TypeLits
@@ -43,14 +47,14 @@ instance (KnownSymbol k, Show v, Show' (Map s)) => Show' (Map ((k ':-> v) ': s))
     show' (Ext k v s) = ", " ++ show k ++ " :-> " ++ show v ++ show' s
 
 
--- Looking up from a map, and membership
-class Member v t m where
+-- Looking up from a map, and IsMembership
+class IsMember v t m where
   lookp :: Var v -> Map m -> t
 
-instance {-# OVERLAPS #-} Member v t ((v ':-> t) ': m) where
+instance {-# OVERLAPS #-} IsMember v t ((v ':-> t) ': m) where
   lookp _ (Ext _ x _) = x
 
-instance Member v t m => Member v t (x ': m) where
+instance IsMember v t m => IsMember v t (x ': m) where
   lookp v (Ext _ _ m) = lookp v m
 
 
