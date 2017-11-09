@@ -18,6 +18,7 @@ import GradedMonad
 data Z
 data S n
 
+
 {-| The counter has no semantic meaning -}
 newtype Counter n a = Counter { forget :: a }
 
@@ -45,7 +46,6 @@ tick = Counter ()
 
 
 
-
 -- Get's very cool when combined with sized types
 data Vector n a where
     Nil :: Vector Z a
@@ -61,3 +61,11 @@ vmap f (Cons x xs) = do
     y <- f x
     ys <- vmap f xs
     return $ Cons y ys
+
+example :: Int -> Counter (S (S Z)) Int
+example x = do
+       tick
+       tick
+       return (x+1)
+
+go = vmap example (Cons 1 (Cons 2 (Cons 3 Nil)))

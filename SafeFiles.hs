@@ -20,7 +20,7 @@ import ParameterisedMonad
 import qualified Prelude as P
 import qualified System.IO as IO
 
-import GHC.TypeLits
+import GHC.TypeLits -- gives us type-level natural numbers
 
 {-
 
@@ -34,6 +34,9 @@ import GHC.TypeLits
 
 -}
 
+
+
+
 -- Wrap the IO monad
 newtype SafeFiles pre post a = SafeFiles { unSafeFiles :: IO a }
 
@@ -43,14 +46,24 @@ instance PMonad SafeFiles where
    -- (>>=) :: SafeFiles p q a -> (a -> SafeFiles q r b) -> SafeFiles p r b
    (SafeFiles m) >>= k = SafeFiles (m P.>>= (unSafeFiles . k))
 
--- Protocol states are a pair of a type-level nat and list of naturals
-data St (n :: Nat) (opens :: [Nat])
+
+
 
 
 
 -- Safe handlers are indexed by a (unique) number
 newtype SafeHandle (n :: Nat) =
-    SafeHandle { unsafeHandle :: IO.Handle }
+       SafeHandle { unsafeHandle :: IO.Handle }
+
+
+
+
+
+
+
+-- Protocol states are a pair of a type-level nat and list of naturals
+data St (n :: Nat) (opens :: [Nat])
+
 
 
 
@@ -104,9 +117,9 @@ hPutChar (SafeHandle h) c = SafeFiles (IO.hPutChar h c)
 
 
 -- hIsEOF :: Handler -> IO Bool
-hIsEOF :: SafeHandle m -> SafeFiles (St h opens) (St h opens) Bool
+hIsEOF :: Member h opens =>
+  SafeHandle h -> SafeFiles (St n opens) (St n opens) Bool
 hIsEOF (SafeHandle h) = SafeFiles (IO.hIsEOF h)
-
 
 
 
@@ -116,11 +129,18 @@ runSafeFiles = unSafeFiles
 
 
 
+
+
+
 example :: IO ()
 example = runSafeFiles $ do
   h  <- openFile "foo" IO.ReadWriteMode
   h' <- openFile "bar" IO.ReadWriteMode
-  fail "Fill in here"
+  x <- hGetChar h
+  hPutChar h' x
+  hClose h'
+  hClose h
+  return ()
 
 example2 :: IO ()
 example2 = runSafeFiles $ do
@@ -130,5 +150,11 @@ example2 = runSafeFiles $ do
 
 loopy h1 h2 = do
   isEmpty <- hIsEOF h1
-  -- File me in
-  fail "Fill in here"
+  if isEmpty
+    then do
+      hClose h1
+      hClose h2
+    else do
+      x <- hGetChar h1
+      hPutChar h2 x
+      loopy h1 h2

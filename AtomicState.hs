@@ -23,28 +23,26 @@ instance PMonad State where
 newtype Closed s = Closed s deriving Show
 newtype Open   s = Open s   deriving Show
 
+-- get :: State s s
 get :: State (Closed s) (Open s) s
 get = State $ \(Closed s) -> (s, Open s)
 
+-- put :: s -> State s ()
 put :: t -> State (Open s) (Closed t) ()
 put tx = State $ \(Open _) -> ((), Closed tx)
-
-type AtomicState s t a = State (Closed s) (Closed t) a
 
 -----------------------------
 -- Examples
 
-{-
-
-myProgram :: State Int String
+myProgram :: State (Closed Int) (Closed Int) String
 myProgram = do
   x <- get
-  let a = somethingPure x
   put (x+1)
+  a <- somethingPurish x
   return (a ++ show x)
 
-somethingPure :: Int -> String
-somethingPure n =
-  if n == 0 then "hello" else "goodbye"
-
--}
+somethingPurish :: Int -> State (Closed Int) (Closed Int) String
+somethingPurish n = do
+  x <- get
+  put (x + 1)
+  return $ if n == 0 then "hello" else "goodbye"
