@@ -1,11 +1,12 @@
 # Programs that explain their effects
 
-Material from my HaskellX Bytes (SkillsMatter) talk in London, 9th November 2017.
+Material from a talk given at:
+  * London Haskell User Group talk, 24th January 2018.
+  * HaskellX Bytes (SkillsMatter), London, 9th November 2017.
 
 The examples here are supposed to be self contaiend, but can be rewritten in terms of the libraries:
-   * Control.Monad.Indexed (https://hackage.haskell.org/package/category-extras)
+   * Control.Monad.Effect (https://hackage.haskell.org/package/effect-monad) 
    * Data.Type.Map (https://hackage.haskell.org/package/type-level-sets)
-   * Control.Monad.Effect (https://hackage.haskell.org/package/effect-monad)
 
 The ideas in this talk are contained in various paper, the most pertinent being:
    * Embedding effect systems in Haskell (Orchard, Petricek 2014)
