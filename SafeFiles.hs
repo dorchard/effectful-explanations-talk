@@ -33,12 +33,8 @@ import GHC.TypeLits -- gives us type-level natural numbers
 
 -}
 
-
-
 -- Wrap the IO monad
 newtype SafeFiles pre post a = SafeFiles { unSafeFiles :: IO a }
-
-
 
 -- Just use the IO monad underneath...
 instance PMonad SafeFiles where
@@ -47,23 +43,16 @@ instance PMonad SafeFiles where
    -- (>>=) :: SafeFiles p q a -> (a -> SafeFiles q r b) -> SafeFiles p r b
    (SafeFiles m) >>= k = SafeFiles (m P.>>= (unSafeFiles . k))
 
-
 ------------------------------------------------------------------
-
-
 
 -- Safe handlers are indexed by a (unique) number
 newtype SafeHandle (n :: Nat) =
        SafeHandle { unsafeHandle :: IO.Handle }
 
-
-
 -- Protocol states are a pair of a
 --   * a type-level nat representing the next fresh handle
 --   * list of open handles
 data St (n :: Nat) (opens :: [Nat])
-
-
 
 -- openFile :: FilePath -> IOMode -> IO Handle
 -- Opens a file, returns a handler with a fresh name
@@ -73,6 +62,10 @@ openFile ::
  -> SafeFiles (St h opens) (St (h + 1) (h ': opens)) (SafeHandle h)
 openFile f mode = SafeFiles $ fmap SafeHandle (IO.openFile f mode)
 
+-- Membership predicate
+class Member (x :: Nat) (xs :: [Nat]) where
+instance {-# OVERLAPS #-}     Member x (x ': xs) where
+instance {-# OVERLAPPABLE #-} Member x xs => Member x (y ': xs)
 
 -- hGetChar :: Handle -> IO Char
 hGetChar :: Member h opens =>
@@ -81,20 +74,12 @@ hGetChar :: Member h opens =>
 
 hGetChar = SafeFiles . IO.hGetChar . unsafeHandle
 
-
--- Membership predicate
-class Member (x :: Nat) (xs :: [Nat]) where
-instance {-# OVERLAPS #-}     Member x (x ': xs) where
-instance {-# OVERLAPPABLE #-} Member x xs => Member x (y ': xs)
-
-
 -- hPutChar :: Handle -> Char -> IO ()
 hPutChar :: Member h opens =>
      SafeHandle h
   -> Char -> SafeFiles (St n opens) (St n opens) ()
 
 hPutChar (SafeHandle h) = SafeFiles . IO.hPutChar h
-
 
 -- hClose :: Handle -> IO ()
 hClose :: Member h opens =>
@@ -117,20 +102,11 @@ hIsEOF (SafeHandle h) = SafeFiles (IO.hIsEOF h)
 runSafeFiles :: SafeFiles (St 0 '[]) (St n '[]) a -> IO a
 runSafeFiles = unSafeFiles
 
+example :: IO ()
 example = runSafeFiles $ do
-  h  <- openFile "foo" IO.ReadWriteMode
-  h' <- openFile "bar" IO.ReadWriteMode
-  x <- hGetChar h
-  hPutChar h' x
-  hClose h'
-  hClose h
-  return ()
-
-example2 :: IO ()
-example2 = runSafeFiles $ do
-  h1  <- openFile "foo" IO.ReadWriteMode
-  h2 <- openFile "bar" IO.ReadWriteMode
-  loopy h1 h2
+    h <- openFile "foo" IO.ReadWriteMode
+    h' <- openFile "bar" IO.ReadWriteMode
+    loopy h h'
 
 loopy h1 h2 = do
    isEmpty <- hIsEOF h1

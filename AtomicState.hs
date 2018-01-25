@@ -15,7 +15,6 @@ import State
 newtype Closed s = Closed s deriving Show
 newtype Open   s = Open s   deriving Show
 
-
 -- get :: State s s
 get :: State (Closed s) (Open s) s
 get = State $ \(Closed s) -> (s, Open s)
