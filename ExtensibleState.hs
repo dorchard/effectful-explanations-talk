@@ -11,13 +11,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-module Extensible where
+module ExtensibleState where
 
 -- Bye Monads... as we know them
 import Prelude hiding (Monad(..))
--- Parameterised monad
+
 import ParameterisedMonad
--- State parameterised monad
 import State
 -- A local subset of the 'type-level-sets' package
 -- import Data.Type.Map
@@ -26,13 +25,20 @@ import TypeLevelMaps
 
 -- Example map
 exMap :: Map '["x" ':-> Int, "flag" ':-> Bool]
-exMap = Ext (Var @ "x") (42 :: Int)
-      $ Ext (Var @ "flag") False
-        Empty
+exMap =
+     Ext (Var @ "x") (42 :: Int)
+   $ Ext (Var @ "flag") False
+   $ Empty
+
+
+
 
 -- Fine-grained get, put, and modify
 get :: IsMember v t m => Var v -> State (Map m) (Map m) t
 get v = State $ \s -> (lookp v s, s)
+
+
+
 
 put :: Updatable v t m n => Var v -> t -> State (Map m) (Map n) ()
 put v t = State $ \s -> ((), update s v t)
