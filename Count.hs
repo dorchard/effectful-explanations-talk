@@ -23,13 +23,13 @@ newtype Counter n a = Counter { forget :: a }
 
 {-| Type-level addition -}
 type family n :+ m where
-            n :+ Z   = n
-            n :+ S m = S (n :+ m)
+            n :+ Z   = n          -- n + 0 = n
+            n :+ S m = S (n :+ m) -- n + (m + 1) = 1 + (n + m)
 
 instance GMonad Counter where
 
     {-| Trivial effect annotation is 0 -}
-    type Unit Counter = Z
+    type Zero Counter = Z
     {-| Compose effects by addition -}
     type Plus Counter n m = n :+ m
 
@@ -43,14 +43,18 @@ instance GMonad Counter where
 tick :: Counter (S Z) ()
 tick = Counter ()
 
+-- TODO: tick tick
+example :: Int -> Counter (S (S Z)) Int
+example x = do
+  tick
+  tick
+  return (2*x)
+
 -- Gets very cool when combined with sized types
 data Vector n a where
     Nil :: Vector Z a
     Cons :: a -> Vector n a -> Vector (S n) a
 
-type family n :* m where
-            Z   :* m = Z
-            S n :* m = m :+ (n :* m)
 
 vmap :: (a -> Counter t b) -> Vector n a -> Counter (n :* t) (Vector n b)
 vmap _ Nil         = return Nil
@@ -59,10 +63,10 @@ vmap f (Cons x xs) = do
     ys <- vmap f xs
     return $ Cons y ys
 
-example :: Int -> Counter (S (S Z)) Int
-example x = do
-       tick
-       tick
-       return (x+1)
+type family n :* m where
+            Z   :* m = Z
+            S n :* m = m :+ (n :* m)
 
-go = vmap example (Cons 1 (Cons 2 (Cons 3 Nil)))
+inputList :: Vector (S (S (S Z))) Int
+inputList = Cons 1 (Cons 2 (Cons 3 Nil))
+example2 = vmap example inputList

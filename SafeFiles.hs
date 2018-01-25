@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE TypeOperators #-}
@@ -34,21 +33,37 @@ import GHC.TypeLits -- gives us type-level natural numbers
 
 -}
 
+
+
 -- Wrap the IO monad
 newtype SafeFiles pre post a = SafeFiles { unSafeFiles :: IO a }
 
+
+
+-- Just use the IO monad underneath...
 instance PMonad SafeFiles where
    -- return :: a -> SafeFiles p p a
    return = SafeFiles . P.return
    -- (>>=) :: SafeFiles p q a -> (a -> SafeFiles q r b) -> SafeFiles p r b
    (SafeFiles m) >>= k = SafeFiles (m P.>>= (unSafeFiles . k))
 
+
+------------------------------------------------------------------
+
+
+
 -- Safe handlers are indexed by a (unique) number
 newtype SafeHandle (n :: Nat) =
        SafeHandle { unsafeHandle :: IO.Handle }
 
--- Protocol states are a pair of a type-level nat and list of naturals
+
+
+-- Protocol states are a pair of a
+--   * a type-level nat representing the next fresh handle
+--   * list of open handles
 data St (n :: Nat) (opens :: [Nat])
+
+
 
 -- openFile :: FilePath -> IOMode -> IO Handle
 -- Opens a file, returns a handler with a fresh name
@@ -58,11 +73,34 @@ openFile ::
  -> SafeFiles (St h opens) (St (h + 1) (h ': opens)) (SafeHandle h)
 openFile f mode = SafeFiles $ fmap SafeHandle (IO.openFile f mode)
 
+
+-- hGetChar :: Handle -> IO Char
+hGetChar :: Member h opens =>
+     SafeHandle h
+  -> SafeFiles (St n opens) (St n opens) Char
+
+hGetChar = SafeFiles . IO.hGetChar . unsafeHandle
+
+
+-- Membership predicate
+class Member (x :: Nat) (xs :: [Nat]) where
+instance {-# OVERLAPS #-}     Member x (x ': xs) where
+instance {-# OVERLAPPABLE #-} Member x xs => Member x (y ': xs)
+
+
+-- hPutChar :: Handle -> Char -> IO ()
+hPutChar :: Member h opens =>
+     SafeHandle h
+  -> Char -> SafeFiles (St n opens) (St n opens) ()
+
+hPutChar (SafeHandle h) = SafeFiles . IO.hPutChar h
+
+
 -- hClose :: Handle -> IO ()
 hClose :: Member h opens =>
      SafeHandle h
   -> SafeFiles (St n opens) (St n (Delete h opens)) ()
-hClose (SafeHandle h) = SafeFiles (IO.hClose h)
+hClose = SafeFiles . IO.hClose . unsafeHandle
 
 -- Delete a handler name from a list
 type family Delete (n :: Nat) (ns :: [Nat]) where
@@ -70,35 +108,15 @@ type family Delete (n :: Nat) (ns :: [Nat]) where
             Delete n (n ': ns) = ns
             Delete n (m ': ns) = m ': Delete n ns
 
--- Membership predicate
-class Member (x :: Nat) (xs :: [Nat]) where
-instance {-# OVERLAPS #-} Member x (x ': xs) where
-instance Member x xs => Member x (y ': xs)
-
--- hGetChar :: Handle -> IO Char
-hGetChar :: Member h opens =>
-     SafeHandle h
-  -> SafeFiles (St n opens) (St n opens) Char
-hGetChar (SafeHandle h) = SafeFiles (IO.hGetChar h)
-
--- hPutChar :: Handle -> Char -> IO ()
-hPutChar :: Member h opens =>
-     SafeHandle h
-  -> Char -> SafeFiles (St n opens) (St n opens) ()
-hPutChar (SafeHandle h) c = SafeFiles (IO.hPutChar h c)
-
 -- hIsEOF :: Handler -> IO Bool
 hIsEOF :: Member h opens =>
   SafeHandle h -> SafeFiles (St n opens) (St n opens) Bool
 hIsEOF (SafeHandle h) = SafeFiles (IO.hIsEOF h)
 
-
 -- Only allow running when every file is closed at the end
-runSafeFiles :: SafeFiles (St 0 '[]) (St n '[]) () -> IO ()
+runSafeFiles :: SafeFiles (St 0 '[]) (St n '[]) a -> IO a
 runSafeFiles = unSafeFiles
 
-
-example :: IO ()
 example = runSafeFiles $ do
   h  <- openFile "foo" IO.ReadWriteMode
   h' <- openFile "bar" IO.ReadWriteMode
@@ -115,12 +133,12 @@ example2 = runSafeFiles $ do
   loopy h1 h2
 
 loopy h1 h2 = do
-  isEmpty <- hIsEOF h1
-  if isEmpty
-    then do
-      hClose h1
-      hClose h2
-    else do
-      x <- hGetChar h1
-      hPutChar h2 x
-      loopy h1 h2
+   isEmpty <- hIsEOF h1
+   if isEmpty
+     then do
+       hClose h1
+       hClose h2
+     else do
+       x <- hGetChar h1
+       hPutChar h2 x
+       loopy h1 h2

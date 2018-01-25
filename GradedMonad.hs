@@ -12,11 +12,11 @@ import Prelude hiding (Monad(..))
 
 -- Defined in Control.Monad.Effetct (effect-monad package)
 -- https://github.com/dorchard/effect-monad
-class GMonad (g :: eff -> * -> *) where
-  type Unit g :: eff
-  type Plus g (x :: eff) (y :: eff) :: eff
+class GMonad (g :: k -> * -> *) where
+  type Zero g :: k
+  type Plus g (x :: k) (y :: k) :: k
 
-  return :: a -> g (Unit g) a
+  return :: a -> g (Zero g) a
   (>>=) :: g x a -> (a -> g y b) -> g (Plus g x y) b
 
 
