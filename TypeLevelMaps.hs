@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- Taken from the `type-level-sets` package
 -- Data.Type.Map
@@ -17,6 +19,10 @@
 module TypeLevelMaps where
 
 import GHC.TypeLits
+
+type family (:++) (x :: [k]) (y :: [k]) :: [k] where
+            '[]       :++ xs = xs
+            (x ': xs) :++ ys = x ': (xs :++ ys)
 
 data Var (v :: Symbol) = Var
 

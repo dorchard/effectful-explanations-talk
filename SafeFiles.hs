@@ -62,6 +62,11 @@ openFile ::
  -> SafeFiles (St h opens) (St (h + 1) (h ': opens)) (SafeHandle h)
 openFile f mode = SafeFiles $ fmap SafeHandle (IO.openFile f mode)
 
+
+
+
+
+
 -- Membership predicate
 class Member (x :: Nat) (xs :: [Nat]) where
 instance {-# OVERLAPS #-}     Member x (x ': xs) where
@@ -72,6 +77,8 @@ hGetChar :: Member h opens =>
      SafeHandle h
   -> SafeFiles (St n opens) (St n opens) Char
 
+
+
 hGetChar = SafeFiles . IO.hGetChar . unsafeHandle
 
 -- hPutChar :: Handle -> Char -> IO ()
@@ -80,6 +87,12 @@ hPutChar :: Member h opens =>
   -> Char -> SafeFiles (St n opens) (St n opens) ()
 
 hPutChar (SafeHandle h) = SafeFiles . IO.hPutChar h
+
+
+
+
+
+
 
 -- hClose :: Handle -> IO ()
 hClose :: Member h opens =>
@@ -102,8 +115,8 @@ hIsEOF (SafeHandle h) = SafeFiles (IO.hIsEOF h)
 runSafeFiles :: SafeFiles (St 0 '[]) (St n '[]) a -> IO a
 runSafeFiles = unSafeFiles
 
-example :: IO ()
-example = runSafeFiles $ do
+
+example = do
     h <- openFile "foo" IO.ReadWriteMode
     h' <- openFile "bar" IO.ReadWriteMode
     loopy h h'

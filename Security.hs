@@ -43,5 +43,5 @@ hash x = return (x * x * x)
 
 salt = do
   pin <- secretPin
-  h <- hash pin
+  h   <- hash pin
   return (h + 1234)
