@@ -1,6 +1,7 @@
 # Programs that explain their effects
 
 Material from a talk given at:
+  * Chalmers Functional Programming Group, Gothenburgh, 2nd March 2018.
   * London Haskell User Group talk, 24th January 2018.
   * HaskellX Bytes (SkillsMatter), London, 9th November 2017.
 
